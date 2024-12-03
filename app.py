@@ -112,12 +112,14 @@ def calculate_days(file_path):
     try:
         idx_nama_rs = headers_lower.get_loc("nama rumah sakit")
         idx_status_pembayaran = headers_lower.get_loc("status pembayaran")
+        idx_status_verifikasi = headers_lower.get_loc("status verifikasi")
         idx_tanggal_klaim = headers_lower.get_loc("tanggal klaim diajukan")
     except KeyError as e:
         raise ValueError(f"Kolom tidak ditemukan: {e}")
 
-    # Filter unpaid rows and valid "tanggal klaim diajukan"
+    # Filter unpaid rows, valid "tanggal klaim diajukan", and "status verifikasi" as "done"
     data = data[data.iloc[:, idx_status_pembayaran].str.lower() == "unpaid"]
+    data = data[data.iloc[:, idx_status_verifikasi].str.lower() == "done"]
     data = data[~data.iloc[:, idx_tanggal_klaim].isna()]
     data = data[data.iloc[:, idx_tanggal_klaim] != "-"]
 
@@ -196,6 +198,7 @@ def calculate_days(file_path):
     })
 
     return grouped_summary_df, detailed_data
+
 
 
 
