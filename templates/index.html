@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filter and Summarize Data</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #eef2f7, #d3dce6);
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            color: #0056b3;
+            margin-bottom: 20px;
+        }
+
+        .error {
+            background: #ffcccc;
+            color: #cc0000;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        form input[type="file"] {
+            display: block;
+            margin: 10px auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        form button {
+            background: #0056b3;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        form button:hover {
+            background: #003f7d;
+        }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Filter and Summarize Data</h1>
+        {% if error %}
+        <p class="error"><i class="fas fa-exclamation-triangle"></i> {{ error }}</p>
+        {% endif %}
+        <form action="/" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".xls,.xlsx" required>
+            <button type="submit"><i class="fas fa-filter"></i> Proses</button>
+        </form>
+    </div>
+    <footer>
+        &copy; 2024 - Muhammad Salman Farrisi. Universitas Jenderal Soedirman.
+    </footer>
+</body>
+</html>
