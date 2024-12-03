@@ -86,50 +86,71 @@ def process_excel(file_path):
     
     return summary_df
 
+import pandas as pd
+from datetime import datetime
+
 def calculate_days(file_path):
     # Load data as raw list
     raw_data = pd.read_excel(file_path, header=None).values.tolist()
-    
+
     # Find the header row dynamically
     header_row_index = -1
     for i, row in enumerate(raw_data):
         if any("nomor id jaminan" in str(cell).lower() for cell in row):
             header_row_index = i
             break
-    
+
     if header_row_index == -1:
         raise ValueError("Header yang mengandung 'Nomor ID Jaminan' tidak ditemukan.")
-    
+
     # Create DataFrame using the found header
     headers = raw_data[header_row_index]
     data = pd.DataFrame(raw_data[header_row_index + 1:], columns=headers)
     headers_lower = data.columns.str.lower()
-    
+
     # Find necessary columns
     try:
         idx_nama_rs = headers_lower.get_loc("nama rumah sakit")
         idx_status_pembayaran = headers_lower.get_loc("status pembayaran")
-        idx_status_verifikasi = headers_lower.get_loc("status verifikasi")
         idx_tanggal_klaim = headers_lower.get_loc("tanggal klaim diajukan")
     except KeyError as e:
         raise ValueError(f"Kolom tidak ditemukan: {e}")
-    
-    # Filter unpaid rows and valid tanggal klaim diajukan
+
+    # Filter unpaid rows and valid "tanggal klaim diajukan"
     data = data[data.iloc[:, idx_status_pembayaran].str.lower() == "unpaid"]
     data = data[~data.iloc[:, idx_tanggal_klaim].isna()]
     data = data[data.iloc[:, idx_tanggal_klaim] != "-"]
 
-    # Convert "tanggal klaim diajukan" to datetime and calculate Lama_Hari
-    data["Lama_Hari"] = pd.to_datetime(data.iloc[:, idx_tanggal_klaim], errors='coerce')
-    data["Lama_Hari"] = (datetime.now() - data["Lama_Hari"]).dt.days
+    # Convert "tanggal klaim diajukan" to datetime with specific format
+    data["Tanggal_Klaim"] = pd.to_datetime(
+        data.iloc[:, idx_tanggal_klaim],
+        format="%d-%m-%Y",  # Format yang sesuai dengan data Anda
+        errors='coerce'  # Tetap menangani nilai yang tidak valid
+    )
 
-    # Filter rows with valid "Lama_Hari"
-    data = data[data["Lama_Hari"].notna()]
+    # Filter rows with valid dates
+    data = data[data["Tanggal_Klaim"].notna()]  # Hapus tanggal yang tidak valid
+
+    # Normalize to date only
+    data["Tanggal_Klaim"] = data["Tanggal_Klaim"].dt.normalize()
+    today = pd.Timestamp.now().normalize()  # Normalize to today's date
+
+    # Calculate "Lama_Hari"
+    data["Lama_Hari"] = (today - data["Tanggal_Klaim"]).dt.days
+
+    # Debugging information
+    print("DEBUG - Raw Tanggal Klaim:")
+    print(data.iloc[:, idx_tanggal_klaim])
+    print("DEBUG - Converted Tanggal Klaim:")
+    print(data["Tanggal_Klaim"])
+    print("DEBUG - Today's Date:", today)
+    print("DEBUG - Calculated Lama_Hari:")
+    print(data[["Tanggal_Klaim", "Lama_Hari"]])
 
     # Grouping by Rumah Sakit and Binning Lama_Hari
-    bins = [0, 1, 10, 15, float('inf')]
-    labels = ["0", "1 - 10", "11 - 14", "> 14"]
-    
+    bins = [0, 10, 15, float('inf')]
+    labels = ["0 - 10", "11 - 14", "> 14"]
+
     # Initialize dictionary for grouped data
     grouped_data = {}
 
@@ -137,20 +158,18 @@ def calculate_days(file_path):
     for _, row in data.iterrows():
         nama_rs = row[idx_nama_rs]
         days = row["Lama_Hari"]
-        
+
         # Initialize the dictionary for new rumah sakit
         if nama_rs not in grouped_data:
             grouped_data[nama_rs] = {label: 0 for label in labels}
-        
+
         # Assign bin based on Lama_Hari
-        if days <= bins[1]:
-            grouped_data[nama_rs]["0"] += 1
+        if bins[0] <= days <= bins[1]:
+            grouped_data[nama_rs]["0 - 10"] += 1
         elif bins[1] < days <= bins[2]:
-            grouped_data[nama_rs]["1 - 10"] += 1
-        elif bins[2] < days <= bins[3]:
             grouped_data[nama_rs]["11 - 14"] += 1
         else:
-            grouped_data[nama_rs]["> 14"] += 1  # Fix this line
+            grouped_data[nama_rs]["> 14"] += 1
 
     # Generate Grouped Summary
     summary_data = []
@@ -158,14 +177,14 @@ def calculate_days(file_path):
         summary_row = [nama_rs] + list(counts.values())
         summary_row.append(sum(counts.values()))  # Grand Total
         summary_data.append(summary_row)
-    
+
     # Calculate Grand Total for each column (sum across all Rumah Sakit)
     grand_totals = [sum([row[i] for row in summary_data]) for i in range(1, len(labels) + 2)]
     grand_totals.insert(0, "Total")
-    
+
     # Add grand totals to the summary data
     summary_data.append(grand_totals)
-    
+
     grouped_summary_df = pd.DataFrame(summary_data, columns=["Nama Rumah Sakit"] + labels + ["Grand Total"])
 
     # Create Detailed Data with calculated "Lama_Hari"
@@ -177,6 +196,11 @@ def calculate_days(file_path):
     })
 
     return grouped_summary_df, detailed_data
+
+
+
+
+
 
 def process_and_save(file_path, result_file):
     summary_df = process_excel(file_path)
