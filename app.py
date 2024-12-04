@@ -83,6 +83,8 @@ def process_excel(file_path):
     ]
     summary_df = pd.DataFrame(summary_data, columns=["Nama Rumah Sakit", "Done", "Revision", "New", 
                                                      "Waiting First Layer Verification", "Lain-lain", "Total"])
+    # Sort by 'Nama Rumah Sakit' in ascending order
+    summary_df = summary_df.sort_values(by="Nama Rumah Sakit", ascending=True)
     # Add grand total
     grand_total = summary_df.iloc[:, 1:].sum(axis=0)
     grand_total["Nama Rumah Sakit"] = "Total"
@@ -197,6 +199,9 @@ def calculate_days(file_path):
     summary_data.append(grand_totals)
 
     grouped_summary_df = pd.DataFrame(summary_data, columns=["Nama Rumah Sakit"] + labels + ["Grand Total"])
+    
+    # Sort by Nama Rumah Sakit in ascending order
+    grouped_summary_df = grouped_summary_df.sort_values("Nama Rumah Sakit", ascending=True)
 
     # Create Detailed Data with calculated "Lama_Hari"
     detailed_data = data[[headers[idx_nama_rs], headers[idx_tanggal_verifikasi], "Lama_Hari"]]
