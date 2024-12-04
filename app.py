@@ -38,11 +38,15 @@ def process_excel(file_path):
         idx_nama_rs = headers_lower.get_loc("nama rumah sakit")
         idx_status_pembayaran = headers_lower.get_loc("status pembayaran")
         idx_status_verifikasi = headers_lower.get_loc("status verifikasi")
+        idx_gl_status = headers_lower.get_loc("gl status")
     except KeyError as e:
         raise ValueError(f"Kolom tidak ditemukan: {e}")
     
-    # Filter unpaid rows
-    filtered_data = data[data.iloc[:, idx_status_pembayaran].str.lower() == "unpaid"]
+    # Filter unpaid rows and GL Status Active
+    filtered_data = data[
+        (data.iloc[:, idx_status_pembayaran].str.lower() == "unpaid") & 
+        (data.iloc[:, idx_gl_status].str.lower() == "active")
+    ]
     
     # Rekap data
     result = {}
@@ -86,6 +90,7 @@ def process_excel(file_path):
     
     return summary_df
 
+
 import pandas as pd
 from datetime import datetime
 
@@ -113,13 +118,24 @@ def calculate_days(file_path):
         idx_nama_rs = headers_lower.get_loc("nama rumah sakit")
         idx_status_pembayaran = headers_lower.get_loc("status pembayaran")
         idx_status_verifikasi = headers_lower.get_loc("status verifikasi")
+        idx_gl_status = headers_lower.get_loc("gl status")
         idx_tanggal_klaim = headers_lower.get_loc("tanggal klaim diajukan")
     except KeyError as e:
         raise ValueError(f"Kolom tidak ditemukan: {e}")
 
-    # Filter unpaid rows, valid "tanggal klaim diajukan", and "status verifikasi" as "done"
+    # Filter unpaid rows
     data = data[data.iloc[:, idx_status_pembayaran].str.lower() == "unpaid"]
-    data = data[data.iloc[:, idx_status_verifikasi].str.lower() == "done"]
+
+    # Filter GL Status as "Active"
+    data = data[data.iloc[:, idx_gl_status].str.lower() == "active"]
+
+    # Filter Status Verifikasi as "done" or contains "resend"
+    data = data[
+        (data.iloc[:, idx_status_verifikasi].str.lower() == "done") |
+        (data.iloc[:, idx_status_verifikasi].str.contains("resend", case=False, na=False))
+    ]
+
+    # Filter rows with valid "tanggal klaim diajukan"
     data = data[~data.iloc[:, idx_tanggal_klaim].isna()]
     data = data[data.iloc[:, idx_tanggal_klaim] != "-"]
 
@@ -139,15 +155,6 @@ def calculate_days(file_path):
 
     # Calculate "Lama_Hari"
     data["Lama_Hari"] = (today - data["Tanggal_Klaim"]).dt.days
-
-    # Debugging information
-    print("DEBUG - Raw Tanggal Klaim:")
-    print(data.iloc[:, idx_tanggal_klaim])
-    print("DEBUG - Converted Tanggal Klaim:")
-    print(data["Tanggal_Klaim"])
-    print("DEBUG - Today's Date:", today)
-    print("DEBUG - Calculated Lama_Hari:")
-    print(data[["Tanggal_Klaim", "Lama_Hari"]])
 
     # Grouping by Rumah Sakit and Binning Lama_Hari
     bins = [0, 10, 15, float('inf')]
@@ -198,6 +205,7 @@ def calculate_days(file_path):
     })
 
     return grouped_summary_df, detailed_data
+
 
 
 
