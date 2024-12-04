@@ -210,6 +210,8 @@ def calculate_days(file_path):
         headers[idx_tanggal_verifikasi]: "Tanggal Verifikasi",
         "Lama_Hari": "Lama Hari"
     })
+    # Sort Detailed Data by "Nama Rumah Sakit" in ascending order
+    detailed_data = detailed_data.sort_values("Nama Rumah Sakit", ascending=True)
 
     return grouped_summary_df, detailed_data
 
