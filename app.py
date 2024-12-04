@@ -95,6 +95,8 @@ import pandas as pd
 from datetime import datetime
 
 def calculate_days(file_path):
+    import pandas as pd
+    
     # Load data as raw list
     raw_data = pd.read_excel(file_path, header=None).values.tolist()
 
@@ -119,7 +121,7 @@ def calculate_days(file_path):
         idx_status_pembayaran = headers_lower.get_loc("status pembayaran")
         idx_status_verifikasi = headers_lower.get_loc("status verifikasi")
         idx_gl_status = headers_lower.get_loc("gl status")
-        idx_tanggal_klaim = headers_lower.get_loc("tanggal klaim diajukan")
+        idx_tanggal_verifikasi = headers_lower.get_loc("tanggal verifikasi")
     except KeyError as e:
         raise ValueError(f"Kolom tidak ditemukan: {e}")
 
@@ -135,26 +137,26 @@ def calculate_days(file_path):
         (data.iloc[:, idx_status_verifikasi].str.contains("resend", case=False, na=False))
     ]
 
-    # Filter rows with valid "tanggal klaim diajukan"
-    data = data[~data.iloc[:, idx_tanggal_klaim].isna()]
-    data = data[data.iloc[:, idx_tanggal_klaim] != "-"]
+    # Filter rows with valid "tanggal verifikasi"
+    data = data[~data.iloc[:, idx_tanggal_verifikasi].isna()]
+    data = data[data.iloc[:, idx_tanggal_verifikasi] != "-"]
 
-    # Convert "tanggal klaim diajukan" to datetime with specific format
-    data["Tanggal_Klaim"] = pd.to_datetime(
-        data.iloc[:, idx_tanggal_klaim],
+    # Convert "tanggal verifikasi" to datetime with specific format
+    data["Tanggal_Verifikasi"] = pd.to_datetime(
+        data.iloc[:, idx_tanggal_verifikasi],
         format="%d-%m-%Y",  # Format yang sesuai dengan data Anda
         errors='coerce'  # Tetap menangani nilai yang tidak valid
     )
 
     # Filter rows with valid dates
-    data = data[data["Tanggal_Klaim"].notna()]  # Hapus tanggal yang tidak valid
+    data = data[data["Tanggal_Verifikasi"].notna()]  # Hapus tanggal yang tidak valid
 
     # Normalize to date only
-    data["Tanggal_Klaim"] = data["Tanggal_Klaim"].dt.normalize()
+    data["Tanggal_Verifikasi"] = data["Tanggal_Verifikasi"].dt.normalize()
     today = pd.Timestamp.now().normalize()  # Normalize to today's date
 
     # Calculate "Lama_Hari"
-    data["Lama_Hari"] = (today - data["Tanggal_Klaim"]).dt.days
+    data["Lama_Hari"] = (today - data["Tanggal_Verifikasi"]).dt.days
 
     # Grouping by Rumah Sakit and Binning Lama_Hari
     bins = [0, 10, 15, float('inf')]
@@ -197,10 +199,10 @@ def calculate_days(file_path):
     grouped_summary_df = pd.DataFrame(summary_data, columns=["Nama Rumah Sakit"] + labels + ["Grand Total"])
 
     # Create Detailed Data with calculated "Lama_Hari"
-    detailed_data = data[[headers[idx_nama_rs], headers[idx_tanggal_klaim], "Lama_Hari"]]
+    detailed_data = data[[headers[idx_nama_rs], headers[idx_tanggal_verifikasi], "Lama_Hari"]]
     detailed_data = detailed_data.rename(columns={
         headers[idx_nama_rs]: "Nama Rumah Sakit",
-        headers[idx_tanggal_klaim]: "Tanggal Klaim Diajukan",
+        headers[idx_tanggal_verifikasi]: "Tanggal Verifikasi",
         "Lama_Hari": "Lama Hari"
     })
 
