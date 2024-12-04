@@ -159,8 +159,8 @@ def calculate_days(file_path):
     data["Lama_Hari"] = (today - data["Tanggal_Verifikasi"]).dt.days
 
     # Grouping by Rumah Sakit and Binning Lama_Hari
-    bins = [0, 10, 15, float('inf')]
-    labels = ["0 - 10", "11 - 14", "> 14"]
+    bins = [-1, 9, 14, float('inf')]
+    labels = ["<10", "10-14", ">14"]
 
     # Initialize dictionary for grouped data
     grouped_data = {}
@@ -175,12 +175,12 @@ def calculate_days(file_path):
             grouped_data[nama_rs] = {label: 0 for label in labels}
 
         # Assign bin based on Lama_Hari
-        if bins[0] <= days <= bins[1]:
-            grouped_data[nama_rs]["0 - 10"] += 1
+        if bins[0] < days <= bins[1]:
+            grouped_data[nama_rs]["<10"] += 1
         elif bins[1] < days <= bins[2]:
-            grouped_data[nama_rs]["11 - 14"] += 1
+            grouped_data[nama_rs]["10-14"] += 1
         else:
-            grouped_data[nama_rs]["> 14"] += 1
+            grouped_data[nama_rs][">14"] += 1
 
     # Generate Grouped Summary
     summary_data = []
